@@ -22,19 +22,23 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
-      - name: Mirror site via wget
+      - name: Install mirroring tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y httrack
+
+      - name: Mirror site via HTTrack
         run: |
           rm -rf mirror
           mkdir -p mirror
-          wget \
-            --mirror \
-            --convert-links \
-            --adjust-extension \
-            --page-requisites \
-            --no-parent \
-            --reject "index.html?*" \
-            --directory-prefix mirror \
-            "$SOURCE_URL"
+          httrack "$SOURCE_URL" \
+            -O mirror \
+            "+*.thejokergame.com/*" \
+            "-*" \
+            -W \
+            -c8 \
+            -%v \
+            --clean
 
       - name: Deploy mirror to server
         run: |
