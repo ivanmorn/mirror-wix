@@ -1,0 +1,45 @@
+name: Mirror Wix Site
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs every day at 01:00 UTC; adjust as needed.
+    - cron: "0 1 * * *"
+
+jobs:
+  mirror-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_URL: https://www.thejokergame.com
+      REMOTE_PATH: /usr/share/nginx/html/mirror-wix
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+    steps:
+      - name: Harden SSH client
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Mirror site via wget
+        run: |
+          rm -rf mirror
+          mkdir -p mirror
+          wget \
+            --mirror \
+            --convert-links \
+            --adjust-extension \
+            --page-requisites \
+            --no-parent \
+            --reject "index.html?*" \
+            --directory-prefix mirror \
+            "$SOURCE_URL"
+
+      - name: Deploy mirror to server
+        run: |
+          rsync -az --delete mirror/www.thejokergame.com/ "$DEPLOY_USER@$DEPLOY_HOST:$REMOTE_PATH/"
+
+      - name: Reload nginx
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "sudo nginx -s reload"
