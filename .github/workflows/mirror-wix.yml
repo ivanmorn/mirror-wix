@@ -34,9 +34,15 @@ jobs:
           httrack "$SOURCE_URL" \
             -O mirror \
             "+*.thejokergame.com/*" \
-            "-*" \
-            -W \
-            -c8 \
+            "+*.wixstatic.com/*" \
+            "+*.wixmp.com/*" \
+            "+*.googleapis.com/*" \
+            "+*.gstatic.com/*" \
+            -c16 \
+            --robots=0 \
+            --disable-security-limits \
+            --keep-alive \
+            --display \
             -%v \
             --clean
 
